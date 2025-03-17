@@ -1,71 +1,148 @@
 <?php
+session_start();
 require_once 'database.php';
 
-// Fetch all courses
-$stmt = $conn->prepare("SELECT * FROM HocPhan");
-$stmt->execute();
-$courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['masv'])) {
+    header("Location: login.php");
+    exit();
+}
+
+// Xử lý đăng ký học phần
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['mahp'])) {
+    $masv = $_SESSION['masv'];
+    $mahp = $_POST['mahp'];
+
+    // Kiểm tra xem đã đăng ký học phần này chưa
+    $check = $conn->prepare("SELECT * FROM dangky WHERE masv = ? AND mahp = ?");
+    $check->execute([$masv, $mahp]);
+
+    if ($check->rowCount() == 0) {
+        $stmt = $conn->prepare("INSERT INTO dangky (masv, mahp) VALUES (?, ?)");
+        if ($stmt->execute([$masv, $mahp])) {
+            $success = "Đăng ký học phần thành công!";
+        } else {
+            $error = "Có lỗi xảy ra khi đăng ký học phần.";
+        }
+    } else {
+        $error = "Bạn đã đăng ký học phần này rồi!";
+    }
+}
+
+// Lấy danh sách học phần
+$stmt = $conn->query("SELECT * FROM hocphan");
+$hocphans = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Danh Sách Học Phần</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Danh sách học phần</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        .btn-dangky {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .btn-dangky:hover {
+            background-color: #45a049;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+    </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">QUẢN LÝ SINH VIÊN</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Sinh Viên</a>
-                <a class="nav-link active" href="hocphan.php">Học Phần</a>
-                <a class="nav-link" href="dangky.php">Đăng Ký</a>
-                <a class="nav-link" href="login.php">Đăng Nhập</a>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
-    <div class="container mt-4">
+    <div class="container">
         <h2>DANH SÁCH HỌC PHẦN</h2>
 
-        <table class="table table-bordered">
+        <?php if (isset($success)): ?>
+            <div class="message success"><?php echo $success; ?></div>
+        <?php endif; ?>
+
+        <?php if (isset($error)): ?>
+            <div class="message error"><?php echo $error; ?></div>
+        <?php endif; ?>
+
+        <table>
             <thead>
                 <tr>
                     <th>Mã Học Phần</th>
                     <th>Tên Học Phần</th>
                     <th>Số Tín Chỉ</th>
-                    <th>Thao Tác</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($courses as $course): ?>
+                <?php foreach ($hocphans as $hp): ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($course['MaHP']); ?></td>
-                        <td><?php echo htmlspecialchars($course['TenHP']); ?></td>
-                        <td><?php echo htmlspecialchars($course['SoTinChi']); ?></td>
+                        <td><?php echo htmlspecialchars($hp['mahp']); ?></td>
+                        <td><?php echo htmlspecialchars($hp['tenhp']); ?></td>
+                        <td><?php echo htmlspecialchars($hp['sotc']); ?></td>
                         <td>
-                            <?php if (isset($_SESSION['masv'])): ?>
-                                <form action="dangky_process.php" method="POST" style="display: inline;">
-                                    <input type="hidden" name="mahp" value="<?php echo $course['MaHP']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-success">Đăng ký</button>
-                                </form>
-                            <?php else: ?>
-                                <a href="login.php" class="btn btn-sm btn-primary">Đăng nhập để đăng ký</a>
-                            <?php endif; ?>
+                            <form method="POST" style="display: inline;">
+                                <input type="hidden" name="mahp" value="<?php echo $hp['mahp']; ?>">
+                                <button type="submit" class="btn-dangky">Đăng ký</button>
+                            </form>
                         </td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
         </table>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <p style="margin-top: 20px;">
+            <a href="dangky.php">Xem danh sách đã đăng ký</a>
+        </p>
+    </div>
 </body>
 
 </html>

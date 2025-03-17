@@ -1,4 +1,5 @@
 <?php
+session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
@@ -30,8 +31,14 @@ $students = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <div class="container">
             <a class="navbar-brand" href="#">QUẢN LÝ SINH VIÊN</a>
             <div class="navbar-nav">
-                <a class="nav-link active" href="index.php">Trang Chủ</a>
-                <a class="nav-link" href="create.php">Thêm Sinh Viên</a>
+                <a class="nav-link active" href="index.php">Sinh Viên</a>
+                <a class="nav-link" href="hocphan.php">Học Phần</a>
+                <?php if (isset($_SESSION['masv'])): ?>
+                    <a class="nav-link" href="dangky.php">Đăng Ký</a>
+                    <a class="nav-link" href="logout.php">Đăng Xuất</a>
+                <?php else: ?>
+                    <a class="nav-link" href="login.php">Đăng Nhập</a>
+                <?php endif; ?>
             </div>
         </div>
     </nav>

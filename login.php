@@ -2,90 +2,90 @@
 session_start();
 require_once 'database.php';
 
-$error = '';
-
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $masv = $_POST['masv'];
+    $password = $_POST['password'];
 
-    // Check if student exists
-    $stmt = $conn->prepare("SELECT * FROM SinhVien WHERE MaSV = :masv");
-    $stmt->bindParam(':masv', $masv);
-    $stmt->execute();
-    $student = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt = $conn->prepare("SELECT * FROM sinhvien WHERE masv = ?");
+    $stmt->execute([$masv]);
+    $user = $stmt->fetch();
 
-    if ($student) {
-        $_SESSION['masv'] = $student['MaSV'];
-        $_SESSION['hoten'] = $student['HoTen'];
+    if ($user && password_verify($password, $user['password'])) {
+        $_SESSION['masv'] = $masv;
         header("Location: hocphan.php");
         exit();
     } else {
-        $error = 'Mã sinh viên không tồn tại!';
+        $error = "Sai mã sinh viên hoặc mật khẩu";
     }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Nhập</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Đăng nhập</title>
     <link rel="stylesheet" href="style.css">
     <style>
         .login-container {
             max-width: 400px;
             margin: 50px auto;
             padding: 20px;
-            border: 1px solid #ddd;
+            background: #fff;
             border-radius: 5px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
-        .back-link {
-            margin-top: 15px;
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
             display: block;
-            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .error {
+            color: red;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">QUẢN LÝ SINH VIÊN</a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="index.php">Sinh Viên</a>
-                <a class="nav-link" href="hocphan.php">Học Phần</a>
-                <a class="nav-link" href="dangky.php">Đăng Ký</a>
-                <a class="nav-link active" href="login.php">Đăng Nhập</a>
+    <?php include 'navbar.php'; ?>
+
+    <div class="login-container">
+        <h2>ĐĂNG NHẬP</h2>
+        <?php if (isset($error)): ?>
+            <div class="error"><?php echo $error; ?></div>
+        <?php endif; ?>
+
+        <form method="POST" action="">
+            <div class="form-group">
+                <label for="masv">Mã SV:</label>
+                <input type="text" id="masv" name="masv" required>
             </div>
-        </div>
-    </nav>
 
-    <div class="container">
-        <div class="login-container">
-            <h2 class="text-center mb-4">ĐĂNG NHẬP</h2>
+            <div class="form-group">
+                <label for="password">Mật khẩu:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
 
-            <?php if ($error): ?>
-                <div class="alert alert-danger"><?php echo $error; ?></div>
-            <?php endif; ?>
+            <button type="submit" class="btn btn-primary">Đăng Nhập</button>
+        </form>
 
-            <form method="POST">
-                <div class="mb-3">
-                    <label for="masv" class="form-label">Mã SV</label>
-                    <input type="text" class="form-control" id="masv" name="masv" required>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
-            </form>
-
-            <a href="index.php" class="back-link">Back to List</a>
-        </div>
+        <p><a href="index.php">Quay lại trang chủ</a></p>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
